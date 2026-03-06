@@ -1,17 +1,10 @@
 import { IBuyer, TPayment, TBuyerErrors } from '../../types';
 
 export class Buyer {
-  private payment: TPayment;
-  private email: string;
-  private phone: string;
-  private address: string;
-
-  constructor() {
-    this.payment = null;
-    this.email = '';
-    this.phone = '';
-    this.address = '';
-  }
+  private payment: TPayment = null;
+  private email: string = '';
+  private phone: string = '';
+  private address: string = '';
 
   public setData(data: Partial<IBuyer>): void {
     if (data.payment !== undefined) {

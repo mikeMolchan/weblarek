@@ -1,7 +1,7 @@
-import { Buyer } from "../src/components/base/Buyer.ts";
-import { Cart } from "../src/components/base/Cart.ts";
-import { Catalogue } from "../src/components/base/Catalogue.ts";
-import { LarekApi } from "../src/components/base/LarekApi.ts";
+import { Buyer } from "./components/models/Buyer.ts";
+import { Cart } from "./components/models/Cart.ts";
+import { Catalogue } from "./components/models/Catalogue.ts";
+import { LarekApi } from "../src/components/LarekApi.ts";
 import { Api } from "../src/components/base/Api.ts";
 import { apiProducts } from "../src/utils/data.ts";
 import { API_URL } from "../src/utils/constants.ts";
@@ -18,8 +18,8 @@ const orderExample: IOrderRequest = {
     email: "example@test.com",
     phone: "+37529",
     address: "AddrExample",
-    total: apiProducts.items[0].price,
-    items: [apiProducts.items[0].id]
+    total: 750,
+    items: ["854cef69-976d-4c2a-a18c-2aa45046c390"]
 }
 
 // Buyer tests
@@ -87,7 +87,8 @@ console.log("\n=== LarekApi Tests ===");
 service
   .getProducts()
   .then((products) => {
-    console.log("Products:", products);
+    catalogue.products = products;
+    console.log("Products:", catalogue.products);
   })
   .catch((error) => {
     console.log("Products error:", error);

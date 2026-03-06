@@ -28,15 +28,7 @@ export class Cart {
     }
 
     public getTotal(): number {
-        let total = 0;
-
-        for (const product of this._products) {
-            if (product.price !== null) {
-                total = total + product.price;
-            }
-        }
-
-        return total;
+        return this._products.reduce((acc, item) => acc + (item.price ?? 0), 0);
     }
 
     public getCount(): number {
@@ -44,12 +36,6 @@ export class Cart {
     }
 
     public hasProduct(id: string): boolean {
-        for (const product of this._products) {
-            if (product.id === id) {
-                return true;
-            }
-        }
-
-        return false;
+        return this._products.some(item => item.id === id);
     }
 }

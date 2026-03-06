@@ -24,18 +24,14 @@ export interface IBuyer {
 }
 
 export interface IProductResponse {
-    "total": number;
-    "items": IProduct[];
+    total: number;
+    items: IProduct[];
 }
 
-export interface IOrderRequest {
-    payment: TPayment | null;
-    email: string;
-    phone: string;
-    address: string;
-    total: number | null;
+export interface IOrderRequest extends IBuyer {
+    total: number;
     items: string[];
-};
+}
   
 export interface IOrderResponse {
     id: string;
