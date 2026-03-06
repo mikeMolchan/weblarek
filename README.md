@@ -101,17 +101,100 @@ Presenter - презентер содержит основную логику п
 ## Данные
 В приложении используется подход проектирования MVP.
 
-- `IProduct` - товар каталога.
-- `TPayment` - способ оплаты (`"card" | "cash" | null`).
-- `IBuyer` - данные покупателя (payment, email, phone, address).
+### IProduct
+Интерфейс товара, который приходит с сервера.
 
-Обмен с сервером:
-- `IProductResponse` - ответ `GET /product` (`{ total, items }`).
-- `IOrderRequest` - тело `POST /order` (данные покупателя + `total` + `items: string[]`).
-- `IOrderResponse` - ответ `POST /order` (`{ id, total }`).
+```ts
+export interface IProduct {
+    id: string;
+    description: string;
+    image: string;
+    title: string;
+    category: string;
+    price: number | null;
+}
+```
 
-Ошибки валидации:
-- `TBuyerErrors` - тип ошибок для полей покупателя (в модели `Buyer.validate()` возвращается частично - только поля с ошибками).
+- `id` — идентификатор товара.
+- `description` — описание.
+- `image` — путь к изображению.
+- `title` — название товара.
+- `category` — категория.
+- `price` — цена, может быть `null`.
+
+### TPayment
+Тип способа оплаты
+
+```ts
+export type TPayment = "card" | "cash" | null;
+```
+
+### IBuyer
+Интерфейс данных покупателя.
+
+```ts
+export interface IBuyer {
+    payment: TPayment;
+    email: string;
+    phone: string;
+    address: string;
+}
+```
+
+- `payment` — выбранный способ оплаты.
+- `email` — email покупателя.
+- `phone` — телефон покупателя.
+- `address` — адрес доставки.
+
+### Типы обмена с сервером
+
+#### IProductResponse
+Ответ сервера на `GET /product`.
+
+```ts
+export interface IProductResponse {
+    total: number;
+    items: IProduct[];
+}
+```
+
+- `total` — количество товаров.
+- `items` — массив товаров.
+
+#### IOrderRequest
+Тело запроса на `POST /order`. В проекте тип расширяет `IBuyer`.
+
+```ts
+export interface IOrderRequest extends IBuyer {
+    total: number;
+    items: string[];
+}
+```
+
+- поля `payment/email/phone/address` - из `IBuyer`.
+- `total` — итоговая сумма заказа.
+- `items` — массив id товаров.
+
+#### IOrderResponse
+Ответ сервера на `POST /order`.
+
+```ts
+export interface IOrderResponse {
+    id: string;
+    total: number;
+}
+```
+
+- `id` — идентификатор созданного заказа.
+- `total` — итоговая сумма.
+
+### Ошибки валидации покупателя
+
+```ts
+export type TBuyerErrors = Record<keyof IBuyer, string>;
+```
+
+В модели `Buyer.validate()` возвращается частичный объект ошибок: `Partial<TBuyerErrors>` (только поля с ошибками).
 
 ---
 
@@ -119,30 +202,85 @@ Presenter - презентер содержит основную логику п
 
 Модели данных не зависят от UI и отвечают только за хранение/обработку данных.
 
-- `Catalogue` (`src/components/base/Catalogue.ts`)
-  - хранит массив товаров и выбранный товар;
-  - умеет искать товар по `id`.
+### Catalogue (`src/components/base/Catalogue.ts`)
 
-- `Cart` (`src/components/base/Cart.ts`)
-  - хранит товары корзины;
-  - умеет добавлять/удалять/очищать;
-  - считает количество (`getCount`) и сумму (`getTotal`);
-  - проверяет наличие товара по `id` (`hasProduct`).
+Класс Catalogue отвечает за: хранение каталога товаров и выбранного товара для подробного отображения.
 
-- `Buyer` (`src/components/base/Buyer.ts`)
-  - хранит данные покупателя;
-  - частично обновляет данные (`setData`);
-  - очищает (`clear`);
-  - валидирует поля (`validate`).
+Конструктор класса:
+- `constructor()` — создаёт пустой каталог и сбрасывает выбранный товар.
+
+Поля:
+- `_products: IProduct[]` — массив товаров каталога.
+- `_currProduct: IProduct | null` — выбранный товар или `null`.
+
+Методы/аксессоры:
+- `set products(products: IProduct[])` — сохраняет массив товаров в модель.
+- `get products(): IProduct[]` — возвращает массив товаров.
+- `getProductById(id: string): IProduct | null` — ищет товар по `id` и возвращает товар или `null`.
+- `set currProduct(product: IProduct | null)` — сохраняет выбранный товар.
+- `get currProduct(): IProduct | null` — возвращает выбранный товар.
+
+---
+
+### Cart (`src/components/base/Cart.ts`)
+
+Класс Cart отвечает за: хранение товаров, выбранных пользователем, и расчёты (сумма/количество/проверка наличия).
+
+Конструктор класса:
+- `constructor()` — создаёт пустую корзину.
+
+Поле:
+- `_products: IProduct[]` — массив товаров в корзине.
+
+Методы/аксессоры:
+- `get products(): IProduct[]` — возвращает массив товаров корзины.
+- `addProduct(product: IProduct): void` — добавляет товар в корзину.
+- `removeProduct(product: IProduct): void` — удаляет первое совпадение товара по `id`.
+- `clear(): void` — очищает корзину.
+- `getTotal(): number` — возвращает сумму цен товаров, товары с `price === null` не учитываются.
+- `getCount(): number` — возвращает количество товаров в корзине.
+- `hasProduct(id: string): boolean` — проверяет наличие товара по `id`.
+
+---
+
+### Buyer (`src/components/base/Buyer.ts`)
+
+Класс Buyer отвечает за: хранение и валидацию данных покупателя во время оформления заказа.
+
+Конструктор класса:
+- `constructor()` — создаёт пустые данные покупателя (payment = null, строки пустые).
+
+Поля:
+- `payment: TPayment` — способ оплаты.
+- `email: string` — email.
+- `phone: string` — телефон.
+- `address: string` — адрес.
+
+Методы:
+- `setData(data: Partial<IBuyer>): void` — частично обновляет данные (можно передать только одно поле).
+- `getData(): IBuyer` — возвращает текущие данные покупателя.
+- `clear(): void` — очищает данные покупателя.
+- `validate(): Partial<TBuyerErrors>` — возвращает ошибки валидации. Поле считается валидным, если оно не пустое, `payment` должен быть выбран.
 
 ---
 
 ## Слой коммуникации
-`LarekApi` (`src/components/base/LarekApi.ts`) - обертка над базовым `Api`.
 
-- В конструктор принимает `IApi` и использует композицию.
-- `getProducts()` делает `GET /product` и возвращает `IProduct[]`.
-- `postOrder(order)` делает `POST /order` и возвращает `{ id, total }`.
+`LarekApi` (`src/components/base/LarekApi.ts`) — класс коммуникационного слоя. Использует композицию: принимает в конструктор объект, реализующий `IApi`, и вызывает его `get`/`post`.
+
+Класс LarekApi отвечает за:
+- получение каталога товаров;
+- отправку заказа.
+
+Конструктор:
+- `constructor(service: IApi)` — принимает API-клиент из базового кода.
+
+Поле:
+- `service: IApi` — объект для выполнения запросов к серверу.
+
+Методы:
+- `getProducts(): Promise<IProduct[]>` — `GET /product`, получает `IProductResponse` и возвращает `items`.
+- `postOrder(order: IOrderRequest): Promise<IOrderResponse>` — `POST /order`, отправляет данные заказа и возвращает `{ id, total }`.
 
 ---
 
