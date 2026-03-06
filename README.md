@@ -98,3 +98,57 @@ Presenter - презентер содержит основную логику п
 `emit<T extends object>(event: string, data?: T): void` - инициализация события. При вызове события в метод передается название события и объект с данными, который будет использован как аргумент для вызова обработчика.  
 `trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void` - возвращает функцию, при вызове которой инициализируется требуемое в параметрах событие с передачей в него данных из второго параметра.
 
+## Данные
+В приложении используется подход проектирования MVP.
+
+- `IProduct` - товар каталога.
+- `TPayment` - способ оплаты (`"card" | "cash" | null`).
+- `IBuyer` - данные покупателя (payment, email, phone, address).
+
+Обмен с сервером:
+- `IProductResponse` - ответ `GET /product` (`{ total, items }`).
+- `IOrderRequest` - тело `POST /order` (данные покупателя + `total` + `items: string[]`).
+- `IOrderResponse` - ответ `POST /order` (`{ id, total }`).
+
+Ошибки валидации:
+- `TBuyerErrors` - тип ошибок для полей покупателя (в модели `Buyer.validate()` возвращается частично - только поля с ошибками).
+
+---
+
+## Модели данных
+
+Модели данных не зависят от UI и отвечают только за хранение/обработку данных.
+
+- `Catalogue` (`src/components/base/Catalogue.ts`)
+  - хранит массив товаров и выбранный товар;
+  - умеет искать товар по `id`.
+
+- `Cart` (`src/components/base/Cart.ts`)
+  - хранит товары корзины;
+  - умеет добавлять/удалять/очищать;
+  - считает количество (`getCount`) и сумму (`getTotal`);
+  - проверяет наличие товара по `id` (`hasProduct`).
+
+- `Buyer` (`src/components/base/Buyer.ts`)
+  - хранит данные покупателя;
+  - частично обновляет данные (`setData`);
+  - очищает (`clear`);
+  - валидирует поля (`validate`).
+
+---
+
+## Слой коммуникации
+`LarekApi` (`src/components/base/LarekApi.ts`) - обертка над базовым `Api`.
+
+- В конструктор принимает `IApi` и использует композицию.
+- `getProducts()` делает `GET /product` и возвращает `IProduct[]`.
+- `postOrder(order)` делает `POST /order` и возвращает `{ id, total }`.
+
+---
+
+## Проверка (main.ts)
+В `src/main.ts`:
+- создаются экземпляры `Buyer`, `Cart`, `Catalogue`;
+- тестируются их методы через `console.log`;
+- выполняется запрос `getProducts()`;
+- выполняется тестовый `postOrder()`.
