@@ -15,8 +15,8 @@ export class Card<T> extends Component<T> {
     this.titleElement = ensureElement<HTMLElement>('.card__title', this.container);
   }
 
-  set price(price: number) {
-    this.priceElement.textContent = String(price);
+  set price(value: number | null) {
+    this.priceElement.textContent = value === null ? 'Бесценно' : `${value} синапсов`;
   }
 
   set title(title: string) {

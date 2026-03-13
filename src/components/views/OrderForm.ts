@@ -12,7 +12,7 @@ export class OrderForm extends Form<TOrderForm> {
     protected cashButton: HTMLButtonElement;
     protected addressInput: HTMLInputElement;
   
-    constructor(protected events: IEvents, container: HTMLFormElement) {
+    constructor(events: IEvents, container: HTMLFormElement) {
       super(container);
   
       this.cardButton = ensureElement<HTMLButtonElement>(
@@ -28,20 +28,25 @@ export class OrderForm extends Form<TOrderForm> {
         this.container
       );
   
-    //   this.cardButton.addEventListener('click', () => {
-    //     events.emit('order:payment', { payment: 'card' });
-    //   });
+      this.cardButton.addEventListener('click', () => {
+        events.emit('order:payment', { payment: 'card' });
+      });
   
-    //   this.cashButton.addEventListener('click', () => {
-    //     events.emit('order:payment', { payment: 'cash' });
-    //   });
+      this.cashButton.addEventListener('click', () => {
+        events.emit('order:payment', { payment: 'cash' });
+      });
   
-    //   this.addressInput.addEventListener('input', () => {
-    //     events.emit('order:change', {
-    //       field: 'address',
-    //       value: this.addressInput.value,
-    //     });
-    //   });
+      this.addressInput.addEventListener('input', () => {
+        events.emit('order:change', {
+          field: 'address',
+          value: this.addressInput.value,
+        });
+      });
+
+      this.container.addEventListener('submit', (e: Event) => {
+        e.preventDefault();
+        events.emit(`orderForm:submit`);
+      });
     }
   
     set payment(value: 'card' | 'cash') {

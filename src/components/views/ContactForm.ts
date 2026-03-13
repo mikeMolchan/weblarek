@@ -12,7 +12,7 @@ export class ContactsForm extends Form<TContactForm> {
     protected emailInput: HTMLInputElement;
     protected phoneInput: HTMLInputElement;
 
-    constructor(protected events: IEvents, container: HTMLFormElement) {
+    constructor(events: IEvents, container: HTMLFormElement) {
       super(container);
   
       this.emailInput = ensureElement<HTMLInputElement>(
@@ -24,18 +24,23 @@ export class ContactsForm extends Form<TContactForm> {
         this.container
       );
   
-    //   this.emailInput.addEventListener('input', () => {
-    //     events.emit('contacts:change', {
-    //       field: 'email',
-    //       value: this.emailInput.value,
-    //     });
-    //   });
+      this.emailInput.addEventListener('input', () => {
+        events.emit('contacts:change', {
+          field: 'email',
+          value: this.emailInput.value,
+        });
+      });
   
-    //   this.phoneInput.addEventListener('input', () => {
-    //     events.emit('contacts:change', {
-    //       field: 'phone',
-    //       value: this.phoneInput.value,
-    //     });
-    //   });
+      this.phoneInput.addEventListener('input', () => {
+        events.emit('contacts:change', {
+          field: 'phone',
+          value: this.phoneInput.value,
+        });
+      });
+
+      this.container.addEventListener('submit', (e: Event) => {
+        e.preventDefault();
+        events.emit(`contactForm:submit`);
+      });
     }
   }

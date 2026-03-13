@@ -290,3 +290,246 @@ export type TBuyerErrors = Record<keyof IBuyer, string>;
 - тестируются их методы через `console.log`;
 - выполняется запрос `getProducts()`;
 - выполняется тестовый `postOrder()`.
+
+## Слой представления (View)
+
+Классы представления отвечают за отображение данных на странице. Не хранят данные и не содержат логику — только рендерят UI и сообщают презентеру о действиях пользователя через события.
+
+---
+
+### Gallery (`src/components/view/Gallery.ts`)
+
+Отображает каталог товаров на главной странице.
+
+Конструктор принимает элемент `<main class="gallery">`.
+
+Сеттеры:
+- `set items(items: HTMLElement[])` — заменяет содержимое галереи карточками.
+
+---
+
+### Header (`src/components/view/Header.ts`)
+
+Отображает шапку сайта — счётчик корзины и кнопка её открытия.
+
+Конструктор принимает `events` и контейнер шапки, вешает обработчик клика на кнопку корзины.
+
+Поля:
+- `counterElement: HTMLElement`
+- `basketButton: HTMLButtonElement`
+
+Сеттеры:
+- `set counter(value: number)` — обновляет счётчик товаров.
+
+События:
+- `basket:open` — клик на кнопку корзины.
+
+---
+
+### Modal (`src/components/view/Modal.ts`)
+
+Отображает модальное окно. Не имеет наследников — контент передаётся как самостоятельный компонент.
+
+Конструктор принимает `events` и контейнер модалки, вешает обработчики закрытия на крестик и оверлей.
+
+Поля:
+- `contentElement: HTMLElement`
+- `buttonElement: HTMLButtonElement`
+
+Сеттеры:
+- `set content(value: HTMLElement)` — заменяет содержимое модального окна.
+
+Методы:
+- `open()` — добавляет модификатор `modal_active`.
+- `close()` — удаляет модификатор `modal_active`.
+
+События:
+- `modal:close` — клик на крестик или оверлей.
+
+---
+
+### Card (`src/components/view/Card.ts`)
+
+Базовый класс для всех карточек товара. Содержит общий функционал — цена и название.
+
+Конструктор принимает контейнер карточки.
+
+Поля:
+- `priceElement: HTMLElement`
+- `titleElement: HTMLElement`
+
+Сеттеры:
+- `set price(value: number | null)` — устанавливает цену, если `null` выводит «Бесценно».
+- `set title(value: string)`
+
+---
+
+### CardCatalog (`src/components/view/CardCatalog.ts`)
+
+Карточка товара в каталоге на главной странице. Наследуется от `Card`.
+
+Конструктор принимает контейнер и `actions?: ICardCatalogActions`, вешает обработчик клика на контейнер.
+
+Поля:
+- `categoryElement: HTMLElement`
+- `imageElement: HTMLImageElement`
+
+Сеттеры:
+- `set category(value: string)` — устанавливает категорию и CSS-модификатор через `categoryMap`.
+- `set image(value: string)` — устанавливает изображение через `setImage`.
+
+События передаются через `actions.onClick`, `emit` вызывается в презентере.
+
+---
+
+### CardPreview (`src/components/view/CardPreview.ts`)
+
+Детальная карточка товара в модальном окне. Наследуется от `Card`.
+
+Конструктор принимает контейнер и `actions?: ICardPreviewAction`, вешает обработчик клика на кнопку.
+
+Поля:
+- `categoryElement: HTMLElement`
+- `imageElement: HTMLImageElement`
+- `textElement: HTMLElement`
+- `buttonElement: HTMLButtonElement`
+
+Сеттеры:
+- `set category(value: string)` — устанавливает категорию с CSS-модификатором.
+- `set image(value: string)`
+- `set text(value: string)`
+- `set inCart(value: boolean)` — меняет текст кнопки («Купить» / «Удалить из корзины»).
+- `set price(value: number | null)` — если `null`, блокирует кнопку и устанавливает текст «Недоступно».
+
+События передаются через `actions.onClick`, `emit` вызывается в презентере.
+
+---
+
+### CardBasket (`src/components/view/CardBasket.ts`)
+
+Карточка товара в корзине. Наследуется от `Card`.
+
+Конструктор принимает контейнер и `actions?: ICardBasketActions`, вешает обработчик клика на кнопку удаления.
+
+Поля:
+- `buttonElement: HTMLButtonElement`
+- `indexElement: HTMLElement`
+
+Сеттеры:
+- `set index(value: number)` — устанавливает порядковый номер.
+
+События передаются через `actions.onRemove`, `emit` вызывается в презентере.
+
+---
+
+### Basket (`src/components/view/Basket.ts`)
+
+Отображает корзину в модальном окне.
+
+Конструктор принимает `events` и контейнер корзины, вешает обработчик на кнопку «Оформить».
+
+Поля:
+- `listElement: HTMLUListElement`
+- `totalElement: HTMLElement`
+- `buttonElement: HTMLButtonElement`
+
+Сеттеры:
+- `set items(items: HTMLElement[])` — заменяет список товаров.
+- `set total(value: number)` — устанавливает итоговую сумму.
+- `set valid(value: boolean)` — активирует/деактивирует кнопку оформления.
+
+События:
+- `order:open` — клик на кнопку «Оформить».
+
+---
+
+### Form (`src/components/view/Form.ts`)
+
+Базовый класс для форм оформления заказа.
+
+Конструктор принимает контейнер формы, находит кнопку сабмита и элемент ошибок.
+
+Поля:
+- `submitButton: HTMLButtonElement`
+- `errorsElement: HTMLElement`
+
+Сеттеры:
+- `set valid(value: boolean)` — активирует/деактивирует кнопку сабмита.
+- `set errors(value: string)` — выводит текст ошибки.
+
+---
+
+### OrderForm (`src/components/view/OrderForm.ts`)
+
+Первый шаг оформления — выбор оплаты и адрес доставки. Наследуется от `Form`.
+
+Конструктор принимает `events` и контейнер формы, вешает обработчики на кнопки оплаты, поле адреса и сабмит.
+
+Поля:
+- `cardButton: HTMLButtonElement`
+- `cashButton: HTMLButtonElement`
+- `addressInput: HTMLInputElement`
+
+Сеттеры:
+- `set payment(value: 'card' | 'cash')` — выделяет активную кнопку оплаты через `button_alt-active`.
+
+События:
+- `order:payment` — выбор способа оплаты, передаёт `{ payment }`.
+- `order:change` — ввод адреса, передаёт `{ field, value }`.
+- `orderForm:submit` — сабмит формы.
+
+---
+
+### ContactsForm (`src/components/view/ContactsForm.ts`)
+
+Второй шаг оформления — email и телефон. Наследуется от `Form`.
+
+Конструктор принимает `events` и контейнер формы, вешает обработчики на инпуты и сабмит.
+
+Поля:
+- `emailInput: HTMLInputElement`
+- `phoneInput: HTMLInputElement`
+
+Сеттеры:
+- `set email(value: string)`
+- `set phone(value: string)`
+
+События:
+- `contacts:change` — ввод данных, передаёт `{ field, value }`.
+- `contactForm:submit` — сабмит формы.
+
+---
+
+### Success (`src/components/view/Success.ts`)
+
+Экран успешного оформления заказа.
+
+Конструктор принимает `events` и контейнер, вешает обработчик на кнопку.
+
+Поля:
+- `descriptionElement: HTMLElement`
+- `buttonElement: HTMLButtonElement`
+
+Сеттеры:
+- `set description(value: string)` - устанавливает текст с суммой заказа.
+
+События:
+- `success:close` — клик на кнопку «За новыми покупками».
+
+---
+
+## События приложения
+
+### View → Presenter
+
+| Событие | Источник | Данные | Описание |
+|---|---|---|---|
+| `basket:open` | Header | — | Клик на иконку корзины |
+| `modal:close` | Modal | — | Клик на крестик или оверлей |
+| `order:open` | Basket | — | Клик на кнопку «Оформить» |
+| `order:payment` | OrderForm | `{ payment }` | Выбор способа оплаты |
+| `order:change` | OrderForm | `{ field, value }` | Ввод адреса доставки |
+| `orderForm:submit` | OrderForm | — | Сабмит первой формы |
+| `contacts:change` | ContactsForm | `{ field, value }` | Ввод email или телефона |
+| `contactForm:submit` | ContactsForm | — | Сабмит второй формы |
+| `success:close` | Success | — | Клик на кнопку «За новыми покупками» |

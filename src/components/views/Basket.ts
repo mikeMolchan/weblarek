@@ -1,6 +1,6 @@
 import { ensureElement } from '../../utils/utils';
 import { Component } from '../base/Component';
-// import { IEvents } from '../base/Events';
+import { IEvents } from '../base/Events';
 
 type IBasket = {
     items: HTMLElement[];
@@ -12,8 +12,7 @@ export class Basket extends Component<IBasket> {
     protected totalElement: HTMLElement;
     protected buttonElement: HTMLButtonElement;
 
-    // events: IEvents, 
-    constructor(container: HTMLElement) {
+    constructor(events: IEvents, container: HTMLElement) {
         super(container);
 
         this.listElement = ensureElement<HTMLUListElement>(
@@ -29,9 +28,9 @@ export class Basket extends Component<IBasket> {
         this.container
         );
 
-        // this.buttonElement.addEventListener('click', () => {
-        // events.emit('order:open');
-        // });
+        this.buttonElement.addEventListener('click', () => {
+        events.emit('order:open');
+        });
     }
 
     set items(items: HTMLElement[]) {
@@ -42,7 +41,7 @@ export class Basket extends Component<IBasket> {
         this.totalElement.textContent = `${total} синапсов`;
     }
 
-    set valid(isDisabled: boolean) {
-        this.buttonElement.disabled = isDisabled;
+    set valid(value: boolean) {
+        this.buttonElement.disabled = !value;
     }
 }
