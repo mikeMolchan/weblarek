@@ -5,7 +5,7 @@ import { TCard } from './Card';
 import { categoryMap } from '../../utils/constants';
 
 
-type TCardPreview = TCard & Pick<IProduct, "image" | "category" | "description">
+type TCardPreview = TCard & Pick<IProduct, "image" | "category" | "description"> & {inCart: boolean};
 type CategoryKey = keyof typeof categoryMap;
 
 interface ICardPreviewAction {
@@ -46,7 +46,7 @@ export class CardPreview extends Card<TCardPreview> {
     this.setImage(this.imageElement, src, this.title);
   }
 
-  set text(text: string) {
+  set description(text: string) {
     this.textElement.textContent = text;
   }
 
@@ -55,7 +55,7 @@ export class CardPreview extends Card<TCardPreview> {
   }
 
   set price(value: number | null) {
-    super.price = value;
+    this.priceElement.textContent = value === null ? 'Бесценно' : `${value} синапсов`;
     if (value === null) {
       this.buttonElement.textContent = 'Недоступно';
       this.buttonElement.disabled = true;

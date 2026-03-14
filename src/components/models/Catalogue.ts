@@ -31,7 +31,7 @@ export class Catalogue {
 
     public set currProduct(product: IProduct | null) {
         this._currProduct = product;
-        this.events.emit('catalogue:changed', { product });
+        this.events.emit('currProduct:changed', { product });
     }
 
     public get currProduct(): IProduct | null {

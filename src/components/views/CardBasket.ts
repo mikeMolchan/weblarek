@@ -6,7 +6,9 @@ interface ICardBasketActions {
   onRemove: () => void;
 }
 
-export class CardBasket extends Card<TCard> {
+type TCardBasket = TCard & {index: number};
+
+export class CardBasket extends Card<TCardBasket> {
   protected buttonElement: HTMLButtonElement;
   protected indexElement: HTMLElement;
 

@@ -1,103 +1,233 @@
-import { Buyer } from "./components/models/Buyer.ts";
-import { Cart } from "./components/models/Cart.ts";
-import { Catalogue } from "./components/models/Catalogue.ts";
-import { LarekApi } from "../src/components/LarekApi.ts";
-import { Api } from "../src/components/base/Api.ts";
-import { apiProducts } from "../src/utils/data.ts";
-import { API_URL } from "../src/utils/constants.ts";
-import { IOrderRequest } from "./types/index.ts";
+import './scss/styles.scss';
+import { EventEmitter } from './components/base/Events';
+import { Api } from './components/base/Api';
+import { LarekApi } from './components/LarekApi';
+import { Catalogue } from './components/models/Catalogue';
+import { Cart } from './components/models/Cart';
+import { CardBasket } from './components/views/CardBasket';
+import { CardCatalog } from './components/views/CardCatalog';
+import { CardPreview } from './components/views/CardPreview';
+import { Buyer } from './components/models/Buyer';
+import { Header } from './components/views/Header';
+import { Gallery } from './components/views/Gallery';
+import { Modal } from './components/views/Modal';
+import { Basket } from './components/views/Basket';
+import { OrderForm } from './components/views/OrderForm';
+import { ContactsForm } from './components/views/ContactForm';
+import { Success } from './components/views/Success';
+import { API_URL, CDN_URL } from './utils/constants';
+import { cloneTemplate, ensureElement } from './utils/utils';
 
-const buyer     = new Buyer();
-const cart      = new Cart();
-const catalogue = new Catalogue();
-const api       = new Api(API_URL);
-const service   = new LarekApi(api);
+// Api and Events Emitter
+const events = new EventEmitter();
+const api = new Api(API_URL);
+const service = new LarekApi(api);
 
-const orderExample: IOrderRequest = {
-    payment: "card",
-    email: "example@test.com",
-    phone: "+37529",
-    address: "AddrExample",
-    total: 750,
-    items: ["854cef69-976d-4c2a-a18c-2aa45046c390"]
-}
+// Models
+const catalogue = new Catalogue(events);
+const cart = new Cart(events);
+const buyer = new Buyer(events);
 
-// Buyer tests
-console.log("=== Buyer Tests ===");
-console.log("Data:", buyer.getData());
-console.log("Validation Errors:", buyer.validate());
+// Views
+const header = new Header(events, ensureElement('.header'));
+const gallery = new Gallery(ensureElement('.gallery'));
+const modal = new Modal(events, ensureElement('#modal-container'));
 
-buyer.setData({ address: 'Adr1' });
-console.log("Data:", buyer.getData());
-console.log("Validation Errors:", buyer.validate());
+const basket = new Basket(events, cloneTemplate('#basket'));
+const orderForm = new OrderForm(events, cloneTemplate('#order'));
+const contactsForm = new ContactsForm(events, cloneTemplate('#contacts'));
+const success = new Success(events, cloneTemplate('#success'));
 
-buyer.setData({ payment: 'card' });
-console.log("Data:", buyer.getData());
-console.log("Validation Errors:", buyer.validate());
+// Products
+service.getProducts()
+    .then(products => catalogue.products = products)
+    .catch(console.error);
 
-buyer.setData({ email: 'test@test.by', phone: '+37529' });
-console.log("Data:", buyer.getData());
-console.log("Validation Errors:", buyer.validate());
+// Presenter
 
-buyer.clear();
-console.log("Data:", buyer.getData());
-console.log("Validation Errors:", buyer.validate());
-
-// Catalogue Tests
-console.log("\n=== Catalogue Tests ===");
-console.log("Initial products:", catalogue.products);
-console.log("Initial current product:", catalogue.currProduct);
-
-catalogue.products = apiProducts.items;
-
-console.log("Products length:", catalogue.products.length);
-console.log("First product title:", catalogue.products[0]?.title);
-
-const productId = apiProducts.items[0].id;
-const product = catalogue.getProductById(productId);
-console.log("Product by ID:", product);
-
-catalogue.currProduct = product;
-console.log("Current product after setting:", catalogue.currProduct);
-
-// Cart tests
-console.log("\n=== Cart Tests ===");
-console.log("Initial items:", cart.products);
-console.log("Initial count:", cart.getCount());
-
-cart.addProduct(apiProducts.items[0]);
-cart.addProduct(apiProducts.items[1]);
-
-console.log("Cart count after adding products:", cart.getCount());
-console.log("Cart total after adding products:", cart.getTotal());
-
-console.log("Has product with id", apiProducts.items[0].id + ":", cart.hasProduct(apiProducts.items[0].id));
-
-cart.removeProduct(apiProducts.items[0]);
-console.log("Cart count after removing a product:", cart.getCount());
-console.log("Cart total after removing a product:", cart.getTotal());
-
-cart.clear();
-console.log("Cart count after clearing:", cart.getCount());
-console.log("Cart total after clearing:", cart.getTotal());
-
-// LarekApi tests (API/service)
-console.log("\n=== LarekApi Tests ===");
-
-service
-  .getProducts()
-  .then((products) => {
-    catalogue.products = products;
-    console.log("Products:", catalogue.products);
-  })
-  .catch((error) => {
-    console.log("Products error:", error);
-  });
-
-service.postOrder(orderExample)
-    .then((value) => {
-        console.log("Order response:", value);
-    })
-    .catch((error) => {
-        console.log("Order error:", error);
+// Model events
+events.on('catalogue:changed', () => {
+    const items = catalogue.products.map(product => {
+        const card = new CardCatalog(cloneTemplate('#card-catalog'), {
+            onClick: () => events.emit('card:select', { id: product.id })
+        });
+        return card.render({
+            title: product.title,
+            price: product.price,
+            image: CDN_URL + product.image,
+            category: product.category
+        });
     });
+
+    gallery.render({ items });
+    header.render({ counter: cart.getCount() });
+});
+
+events.on('cart:changed', () => {
+    header.render({ counter: cart.getCount() });
+
+    const items = cart.products.map((product, index) => {
+        const card = new CardBasket(cloneTemplate('#card-basket'), {
+            onRemove: () => cart.removeProduct(product)
+        });
+        return card.render({
+            title: product.title,
+            price: product.price,
+            index: index + 1
+        });
+    });
+
+    basket.render({
+        items,
+        total: cart.getTotal(),
+        valid: cart.getCount() > 0,
+    });
+});
+
+// View events
+events.on('card:select', ({ id }: { id: string }) => {
+    console.log('card:select', id);
+    const product = catalogue.getProductById(id);
+    if (!product) return;
+
+    catalogue.currProduct = product;
+});
+
+events.on('currProduct:changed', () => {
+    console.log('currProduct:changed', catalogue.currProduct);
+    const product = catalogue.currProduct;
+    if (!product) return;
+
+    const card = new CardPreview(cloneTemplate('#card-preview'), {
+        onClick: () => {
+            if (cart.hasProduct(product.id)) {
+                cart.removeProduct(product);
+            } else {
+                cart.addProduct(product);
+            }
+            modal.close();
+        }
+    });
+
+    modal.render({
+        content: card.render({
+            title: product.title,
+            price: product.price,
+            image: CDN_URL + product.image,
+            category: product.category,
+            description: product.description,
+            inCart: cart.hasProduct(product.id)
+        })
+    });
+    modal.open();
+});
+
+events.on('basket:open', () => {
+    const items = cart.products.map((product, index) => {
+        const card = new CardBasket(cloneTemplate('#card-basket'), {
+            onRemove: () => cart.removeProduct(product)
+        });
+        return card.render({
+            title: product.title,
+            price: product.price,
+            index: index + 1
+        });
+    });
+
+    modal.render({
+        content: basket.render({
+            items,
+            total: cart.getTotal(),
+            valid: cart.getCount() > 0
+        })
+    });
+    modal.open();
+});
+
+events.on('order:open', () => {
+    modal.render({
+        content: orderForm.render({
+            payment: buyer.getData().payment ?? undefined,
+            valid: false,
+            errors: ''
+        })
+    });
+});
+
+events.on('order:payment', ({ payment }: { payment: 'card' | 'cash' }) => {
+    buyer.setData({ payment });
+    const errors = buyer.validate();
+    orderForm.render({
+        payment,
+        valid: !errors.payment && !errors.address,
+        errors: Object.values(errors).filter(e => 
+            e === errors.payment || e === errors.address
+        ).join(', ')
+    });
+});
+
+events.on('order:change', ({ field, value }: { field: string, value: string }) => {
+    buyer.setData({ [field]: value });
+    const errors = buyer.validate();
+    orderForm.render({
+        valid: !errors.payment && !errors.address,
+        errors: Object.values(errors).filter(e =>
+            e === errors.payment || e === errors.address
+        ).join(', ')
+    });
+});
+
+events.on('orderForm:submit', () => {
+    const errors = buyer.validate();
+    if (errors.payment || errors.address) return;
+
+    modal.render({
+        content: contactsForm.render({
+            valid: false,
+            errors: '',
+        })
+    });
+});
+
+events.on('contacts:change', ({ field, value }: { field: string, value: string }) => {
+    buyer.setData({ [field]: value });
+    const errors = buyer.validate();
+    contactsForm.render({
+        valid: !errors.email && !errors.phone,
+        errors: Object.values(errors).filter(e =>
+            e === errors.email || e === errors.phone
+        ).join(', '),
+    });
+});
+
+events.on('contactForm:submit', () => {
+    const errors = buyer.validate();
+    if (errors.email || errors.phone) return;
+
+    const order = {
+        ...buyer.getData(),
+        items: cart.products.map(p => p.id),
+        total: cart.getTotal(),
+    };
+
+    service.postOrder(order)
+        .then(result => {
+            cart.clear();
+            buyer.clear();
+
+            modal.render({
+                content: success.render({
+                    description: `Списано ${result.total} синапсов`,
+                })
+            });
+        })
+        .catch(console.error);
+});
+
+events.on('modal:close', () => {
+    modal.close();
+});
+
+events.on('success:close', () => {
+    modal.close();
+});

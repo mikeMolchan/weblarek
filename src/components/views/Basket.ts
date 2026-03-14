@@ -5,6 +5,7 @@ import { IEvents } from '../base/Events';
 type IBasket = {
     items: HTMLElement[];
     total: number;
+    valid: boolean;
   }
   
 export class Basket extends Component<IBasket> {

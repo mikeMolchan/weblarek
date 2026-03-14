@@ -30,4 +30,12 @@ export class Modal extends Component<TModal> {
   set content(content: HTMLElement) {
     this.contentElement.replaceChildren(content);
   }
+
+  open() {
+    this.container.classList.add('modal_active');
+  }
+
+  close() {
+    this.container.classList.remove('modal_active');
+  }
 }
