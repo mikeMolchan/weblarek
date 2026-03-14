@@ -522,8 +522,6 @@ export type TBuyerErrors = Record<keyof IBuyer, string>;
 
 ### View → Presenter
 
-| Событие | Источник | Данные | Описание |
-|---|---|---|---|
 | `basket:open` | Header | — | Клик на иконку корзины |
 | `modal:close` | Modal | — | Клик на крестик или оверлей |
 | `order:open` | Basket | — | Клик на кнопку «Оформить» |
@@ -533,3 +531,64 @@ export type TBuyerErrors = Record<keyof IBuyer, string>;
 | `contacts:change` | ContactsForm | `{ field, value }` | Ввод email или телефона |
 | `contactForm:submit` | ContactsForm | — | Сабмит второй формы |
 | `success:close` | Success | — | Клик на кнопку «За новыми покупками» |
+
+### Model → Presenter
+
+| `catalogue:changed` | Catalogue | `{ products }` | Каталог товаров загружен или обновлён |
+| `currProduct:changed` | Catalogue | `{ product }` | Пользователь выбрал товар для просмотра |
+| `cart:changed` | Cart | `{ products }` | Содержимое корзины изменилось |
+| `buyer:changed` | Buyer | `{ payment, email, phone, address }` | Данные покупателя обновились |
+
+---
+
+## Презентер (`src/main.ts`)
+
+Презентер реализован в `main.ts` без выделения в отдельный класс. Он создаёт экземпляры всех слоёв, подписывается на события моделей и представлений и описывает логику их взаимодействия. Презентер не генерирует события — только обрабатывает их.
+
+### Инициализация
+
+При старте приложения создаются:
+- `EventEmitter` — единая шина событий для всего приложения
+- `Api` и `LarekApi` — коммуникационный слой
+- Модели: `Catalogue`, `Cart`, `Buyer`
+- Компоненты View: `Header`, `Gallery`, `Modal`, `Basket`, `OrderForm`, `ContactsForm`, `Success`
+
+После инициализации выполняется запрос `getProducts()` — полученные товары сохраняются в `Catalogue`, что вызывает событие `catalogue:changed`.
+
+### Обработчики событий
+
+`catalogue:changed`
+Рендерит каталог карточек на главной странице и обновляет счётчик корзины в шапке.
+
+`currProduct:changed`
+Создаёт `CardPreview` с данными выбранного товара и открывает модальное окно.
+
+`cart:changed`
+Обновляет счётчик корзины в шапке и перерисовывает список товаров в `Basket`.
+
+`card:select`
+Находит товар по `id` в каталоге и записывает его в `catalogue.currProduct`.
+
+`basket:open`
+Формирует список карточек корзины и открывает модальное окно с `Basket`.
+
+`order:open`
+Открывает модальное окно с первой формой оформления заказа `OrderForm`.
+
+`order:payment`
+Сохраняет способ оплаты в `Buyer`, обновляет состояние `OrderForm` — подсвечивает активную кнопку, валидирует форму.
+
+`order:change`
+Сохраняет адрес доставки в `Buyer`, валидирует `OrderForm` и обновляет её состояние.
+
+`orderForm:submit`
+Проверяет валидность первого шага — если ошибок нет, открывает `ContactsForm`.
+
+`contacts:change`
+Сохраняет email или телефон в `Buyer`, валидирует `ContactsForm` и обновляет её состояние.
+
+`contactForm:submit`
+Проверяет валидность второго шага — если ошибок нет, отправляет заказ на сервер через `postOrder`. После успешного ответа очищает корзину и данные покупателя, открывает экран `Success`.
+
+`modal:close` / `success:close`
+Закрывает модальное окно.
