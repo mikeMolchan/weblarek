@@ -1,9 +1,10 @@
 import { IProduct } from '../../types';
+import { IEvents } from '../base/Events';
 
 export class Cart {
     private _products: IProduct[];
 
-    constructor() {
+    constructor(private events: IEvents) {
         this._products = [];
     }
 
@@ -13,18 +14,20 @@ export class Cart {
 
     public addProduct(product: IProduct): void {
         this._products.push(product);
+        this.events.emit('cart:changed', { products: this._products });
     }
 
     public removeProduct(product: IProduct): void {
         const index = this._products.findIndex((item) => item.id === product.id);
-
         if (index !== -1) {
             this._products.splice(index, 1);
+            this.events.emit('cart:changed', { products: this._products });
         }
     }
 
     public clear(): void {
         this._products = [];
+        this.events.emit('cart:changed', { products: this._products });
     }
 
     public getTotal(): number {

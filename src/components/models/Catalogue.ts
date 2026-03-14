@@ -1,16 +1,18 @@
 import { IProduct } from '../../types';
+import { IEvents } from '../base/Events';
 
 export class Catalogue {
     private _products: IProduct[];
     private _currProduct: IProduct | null;
 
-    constructor() {
+    constructor(private events: IEvents) {
         this._products = [];
         this._currProduct = null;
     }
 
     public set products(products: IProduct[]) {
         this._products = products;
+        this.events.emit('catalogue:changed', { products });
     }
 
     public get products(): IProduct[] {
@@ -29,6 +31,7 @@ export class Catalogue {
 
     public set currProduct(product: IProduct | null) {
         this._currProduct = product;
+        this.events.emit('catalogue:changed', { product });
     }
 
     public get currProduct(): IProduct | null {
