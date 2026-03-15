@@ -1,7 +1,6 @@
 import { ensureElement } from '../../utils/utils';
-import { Card } from './Card';
+import { Card, TCard } from './Card';
 import { IProduct } from '../../types';
-import { TCard } from './Card';
 import { categoryMap } from '../../utils/constants';
 
 type CategoryKey = keyof typeof categoryMap;
